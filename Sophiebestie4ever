@@ -1,0 +1,152 @@
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+
+-- GUI für den Toggle-Button erstellen
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NametagControl"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Player.PlayerGui
+
+-- Frame für den Button erstellen
+local ControlFrame = Instance.new("Frame")
+ControlFrame.Name = "ControlFrame"
+ControlFrame.Size = UDim2.new(0, 150, 0, 40)
+ControlFrame.Position = UDim2.new(0.8, 0, 0.1, 0)
+ControlFrame.BackgroundColor3 = Color3.fromRGB(255, 200, 255)
+ControlFrame.BorderSizePixel = 2
+ControlFrame.BorderColor3 = Color3.fromRGB(255, 105, 180)
+ControlFrame.Active = true
+ControlFrame.Draggable = true
+ControlFrame.Parent = ScreenGui
+
+-- Toggle Button
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+ToggleButton.BackgroundTransparency = 0.5
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
+ToggleButton.Text = "Nametag: AN"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextSize = 14
+ToggleButton.Parent = ControlFrame
+
+-- Nametag erstellen Funktion
+local function createNametag(character)
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "HeartNameTag"
+    billboardGui.Size = UDim2.new(0, 250, 0, 50)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.Adornee = character:WaitForChild("Head")
+    billboardGui.AlwaysOnTop = true
+
+    local effectsContainer = Instance.new("Frame")
+    effectsContainer.Size = UDim2.new(1, 0, 1.5, 0)
+    effectsContainer.Position = UDim2.new(0, 0, -0.25, 0)
+    effectsContainer.BackgroundTransparency = 1
+    effectsContainer.Parent = billboardGui
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "NameText"
+    textLabel.Size = UDim2.new(0.8, 0, 1, 0)
+    textLabel.Position = UDim2.new(0, 0, 0, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "bestie4ever"
+    textLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboardGui
+
+    local creditText = Instance.new("TextLabel")
+    creditText.Name = "CreditText"
+    creditText.Size = UDim2.new(0.2, 0, 0.4, 0)
+    creditText.Position = UDim2.new(0.8, 0, 0.3, 0)
+    creditText.BackgroundTransparency = 1
+    creditText.Text = "von Salih"
+    creditText.TextColor3 = Color3.fromRGB(255, 192, 203)
+    creditText.TextScaled = true
+    creditText.Font = Enum.Font.GothamSemibold
+    creditText.Parent = billboardGui
+
+    return billboardGui
+end
+
+-- Herz-Effekt Funktion
+local function createHeart(effectsContainer)
+    local heart = Instance.new("TextLabel")
+    heart.Size = UDim2.new(0, 20, 0, 20)
+    heart.BorderSizePixel = 0
+    heart.BackgroundTransparency = 1
+    heart.Text = "❤"
+    heart.TextScaled = true
+    heart.TextColor3 = Color3.fromRGB(255, 105, 180)
+    
+    local startX = math.random() * 0.8 + 0.1
+    heart.Position = UDim2.new(startX, 0, 1, 0)
+    heart.Parent = effectsContainer
+    
+    local size = math.random(15, 25)
+    heart.Size = UDim2.new(0, size, 0, size)
+    
+    local tweenInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine)
+    local tween = TweenService:Create(heart, tweenInfo, {
+        Position = UDim2.new(startX + (math.random() - 0.5) * 0.3, 0, 0, 0),
+        TextTransparency = 1,
+        Size = UDim2.new(0, size * 1.5, 0, size * 1.5)
+    })
+    
+    tween:Play()
+    tween.Completed:Connect(function()
+        heart:Destroy()
+    end)
+end
+
+-- Hauptvariablen
+local isEnabled = true
+local currentNametag
+local heartLoop
+
+-- Herz-Effekt-Schleife
+local function startHeartEffect(container)
+    if heartLoop then
+        heartLoop:Disconnect()
+    end
+    
+    heartLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        if isEnabled and math.random() < 0.1 then -- 10% Chance pro Frame
+            createHeart(container)
+        end
+    end)
+end
+
+-- Nametag Toggle Funktion
+local function toggleNametag()
+    isEnabled = not isEnabled
+    ToggleButton.Text = "Nametag: " .. (isEnabled and "AN" or "AUS")
+    
+    if currentNametag then
+        currentNametag.Enabled = isEnabled
+    end
+end
+
+-- Button Click Handler
+ToggleButton.MouseButton1Click:Connect(toggleNametag)
+
+-- Character Loaded Handler
+local function onCharacterAdded(character)
+    if currentNametag then
+        currentNametag:Destroy()
+    end
+    
+    currentNametag = createNametag(character)
+    currentNametag.Parent = character:WaitForChild("Head")
+    currentNametag.Enabled = isEnabled
+    
+    startHeartEffect(currentNametag.effectsContainer)
+end
+
+Player.CharacterAdded:Connect(onCharacterAdded)
+if Player.Character then
+    onCharacterAdded(Player.Character)
+end
